@@ -1,0 +1,6 @@
+/tmp
+/logs
+/__pycache__
+/.idea
+*.dat
+*.wav
