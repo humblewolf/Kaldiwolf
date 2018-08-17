@@ -7,6 +7,11 @@ import pyaudio
 
 class ConstantsWolf:
 
+    # pyro
+
+    pyro_node_name_prefix = "kaldiwolf_pyro_node"
+    max_pyro_nodes = 100
+
     #  read from wav file settings
 
     sampling_rate = 8000
