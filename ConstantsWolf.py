@@ -23,9 +23,9 @@ class ConstantsWolf:
 
     # server configs
 
-    ws_server_host = "10.131.10.64"
+    ws_server_host = "127.0.0.1"
     ws_server_port = 9000
-    redis_server_host = "127.0.0.1"  # not used , if you want to change it change redispy initalization in Redisqueuewolf
+    redis_server_host = "10.131.10.64"  # not used , if you want to change it change redispy initalization in Redisqueuewolf
     redis_server_port = 6379  # not used , if you want to change it change redispy initalization in Redisqueuewolf
     client_log_loc = "logs/client.log"
     srv_log_loc = "logs/server.log"
@@ -37,7 +37,7 @@ class ConstantsWolf:
      0 is the least aggressive about filtering out non-speech, 3 is the most aggressive"""
     padding_duration_ms = 300
 
-    #  read from microphone configs
+    #  read from microphone, configs
 
     sampling_format = pyaudio.paInt16
     record_buffer_samples = 10  # kind of mic buffer

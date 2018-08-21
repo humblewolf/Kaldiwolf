@@ -92,10 +92,9 @@ if __name__ == '__main__':
 
         raw_aud = read_wave(cw.test_file_wav)
         for packet in packet_generator(cw.packet_length_ms, raw_aud, cw.sampling_rate):
-            sleep(cw.loop_sleep_secs) # 0.02 seconds seems to be a nice wait time
-            #print(packet)
-            #print(len(packet))
-            ws.send(packet, binary=True)
+            if isinstance(packet, bytes):
+                sleep(cw.loop_sleep_secs) # 0.02 seconds seems to be a nice wait time
+                ws.send(packet, binary=True)
 
     def outgoing_mic():
         """
