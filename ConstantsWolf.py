@@ -21,7 +21,7 @@ class ConstantsWolf:
     test_file_wav = "D:\\anagram\\asterisk-intg\\ivrag\\31512.wav"
     loop_sleep_secs = 0.02
 
-    #  server configs
+    # server configs
 
     ws_server_host = "10.131.10.64"
     ws_server_port = 9000

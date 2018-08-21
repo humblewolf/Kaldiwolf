@@ -3,40 +3,13 @@ Author: humblewolf
 Description: <write description here...>
 """
 
-from multiprocessing import Process, Queue
-from threading import Thread
+import Pyro4
 
-q = Queue()
+msg = input("Type yr msg.").strip()
 
-def runA():
-    counter = 100
-    while True:
-        try:
-            print('A\n')
-            msg = q.get(block=False)
-            if msg:
-                print(len(msg))
-            counter -= 1
-        except:
-            pass
+ns = Pyro4.locateNS(host="10.131.10.64")
+uri = ns.lookup("kaldiwolf_pyro_node.1")
+obj = Pyro4.Proxy(uri)
+print(obj.decode_by_kaldi(msg))
 
-# def runB():
-#     counter1 = 100
-#     while counter1:
-#         counter1 -= 1
-#         print('B\n')
-
-
-#if __name__ == "main":
-t1 = Thread(target = runA)
-t1.setDaemon(True)
-t1.start()
-# t2 = Thread(target = runB)
-# #t2.setDaemon(True)
-# t2.start()
-counter3 = 100
-while counter3:
-    counter3 -= 1
-    print('C\n')
-
-#t1.join()
+#TODO: do this from a serverwolf area

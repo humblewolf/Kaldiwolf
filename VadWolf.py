@@ -113,6 +113,7 @@ class VadWolf:
         triggered = False
 
         voiced_frames = []
+
         for frame in frames:
             #print("frame obtained by collector - "+str(frame.timestamp))
             is_speech = vad.is_speech(frame.bytes, sample_rate)
@@ -132,10 +133,12 @@ class VadWolf:
                     # audio that's already in the ring buffer.
                     for f, s in ring_buffer:
                         voiced_frames.append(f)
+                        # TODO: create a decoder_wolf instance with available pyro-nodes here, and send frames to it, once a segment is done decode it.....
                     ring_buffer.clear()
             else:
                 # We're in the TRIGGERED state, so collect the audio data
                 # and add it to the ring buffer.
+                #TODO : keep sending frames here
                 voiced_frames.append(frame)
                 ring_buffer.append((frame, is_speech))
                 num_unvoiced = len([f for f, speech in ring_buffer if not speech])
@@ -146,6 +149,7 @@ class VadWolf:
                     sys.stdout.write('-(%s)' % (frame.timestamp + frame.duration))
                     triggered = False
                     yield b''.join([f.bytes for f in voiced_frames])
+                    # TODO : stop sending frames here, start decoding
                     ring_buffer.clear()
                     voiced_frames = []
         if triggered:
