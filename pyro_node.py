@@ -5,27 +5,36 @@ Description: this file will work as a remote kaldi decoder, pyro is being used f
 import Pyro4
 import sys
 from ConstantsWolf import ConstantsWolf as cw
-import serpent
+from kaldi_invoker import TranscriptSegment, invoke_now
+from RedisQueueWolf import PySimpleQueue as psq
+from multiprocessing import Process
 
-
-@Pyro4.behavior(instance_mode="single")
+@Pyro4.behavior(instance_mode="session")
 class KaldiDecoder():
 
     def __init__(self):
         self.aud_binary_data = b''
+        self.psq = psq()
 
     @Pyro4.expose
-    def get_aud_data(self, msg):
-        msg = serpent.tobytes(msg)
-        print('Aud data received is %s' % (msg,))
-        self.aud_binary_data += msg
-        return True
-        #init a new kaldi process using subprocess.popen
+    def get_aud_data(self):
+        print("Triggering audio data retrieval")
+        self.aud_binary_data += self.psq.get_nowait(self.segment_uuid)
+
+    @Pyro4.expose
+    def set_uuids(self, segment_uuid, tcpt_queue_uuid, segment_no):
+        self.segment_uuid = segment_uuid
+        self.tcpt_queue_uuid = tcpt_queue_uuid
+        self.segment_no = segment_no
 
     @Pyro4.expose
     def get_pt(self):
-        return str(self.aud_binary_data)
-        #init a new kaldi process using subprocess.popen
+        path = '%skaldi_wolf/chunk-%s.wav' % (cw.chunk_file_save_loc, self.segment_uuid)
+        print(' Writing file %s' % (path,))
+        TranscriptSegment.write_wave(path, self.aud_binary_data, cw.sampling_rate)
+        opth = Process(name="ServerWolf_op_queue_feed_proc", target=invoke_now, args=(self.tcpt_queue_uuid, self.segment_no, path))
+        opth.start()
+        print("New process spawned for pt generation")
 
 
 def get_available_pyroname(ns):

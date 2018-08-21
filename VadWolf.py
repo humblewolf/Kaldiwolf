@@ -3,76 +3,18 @@ Author: humblewolf
 Description: this file does the chunking,,,,
 """
 
-from multiprocessing import Process
 from RedisQueueWolf import PySimpleQueue
 from Frame import Frame
 from ConstantsWolf import ConstantsWolf as cw
 from decoder_wolf import PyroDecoder as pd
 import collections
-import sys
 import webrtcvad
-import contextlib
-import wave
-import subprocess, os
-import re
-import json
-import pickle
-
-#kh = os.environ['KALDI_HOME']
-
-class TranscriptSegment:
-    def __init__(self, pt, sequence_no):
-        self.pos = sequence_no
-        self.pt = pt
-
-    def jsonifyAndSendToQueue(self, pt_queue_id, tcpt_Queue_Vad):
-        jsonStr = json.dumps(self.__dict__)
-        tcpt_Queue_Vad.put(pt_queue_id, jsonStr)
 
 
-def gen_pt_send(tcpt_queue_uuid, sequence_no, path):
-    global kh
-    executable = 'cd %s && ./decode_single.sh ' % (kh,)
-    args = '%s' % (path,)
-    #args = '%s 2>&1 | sed -n \'s|.*<s>\(.*\)<\/s>|\1|p\'' % (path,)
-    p = subprocess.Popen(executable+args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    stdo, stde = p.communicate()
-    tcpt_Queue_Vad = PySimpleQueue()
-    match = re.match(r'.*<s>(.*)<\/s>.*', str(stde))
-    if match:
-        ts = TranscriptSegment(match.group(1), sequence_no)
-        ts.jsonifyAndSendToQueue(tcpt_queue_uuid, tcpt_Queue_Vad)
-
-
-# def vadetectwork(aud_queue_uuid, tcpt_queue_uuid):
-#
-#     global kh
-#     # generate frames here
-#     vad = webrtcvad.Vad(cw.vad_agressiveness)
-#     frames = VadWolf.frame_generator(aud_queue_uuid)
-#     segments = VadWolf.vad_collector(cw.sampling_rate, cw.packet_length_ms, cw.padding_duration_ms, vad, frames)
-#     for i, segment in enumerate(segments):
-#         path = '%stmp/chunk-%s-%002d.wav' % (kh, tcpt_queue_uuid, i)
-#         print(' Writing %s' % (path,))
-#         VadWolf.write_wave(path, segment, cw.sampling_rate)
-#         #decode a file here - take care of sequence of chunk, use an env variable for kaldi
-#         # spawn a proc for STT and feed text into transcript queue.......
-#         opth = Process(name="ServerWolf_op_queue_feed_proc", target=gen_pt_send, args=(tcpt_queue_uuid, i, path))
-#         opth.start()
-#         print("New process spawned for pt generation")
-
-def vadetectwork(aud_queue_uuid, tcpt_queue_uuid):
-
-    global kh
-    # generate frames here
+def vadetectwork(aud_queue_uuid, tcpt_queue_uuid, base_uuid):
     vad = webrtcvad.Vad(cw.vad_agressiveness)
     frames = VadWolf.frame_generator(aud_queue_uuid)
-    segments = VadWolf.vad_collector(cw.sampling_rate, cw.packet_length_ms, cw.padding_duration_ms, vad, frames)
-    tcpt_Queue_Vad = PySimpleQueue()
-    for i, segment in enumerate(segments):
-        ts = TranscriptSegment(pd.get_segment_pt(segment), i)
-        ts.jsonifyAndSendToQueue(tcpt_queue_uuid, tcpt_Queue_Vad)#TODO test this......monday end
-
+    VadWolf.vad_collector(cw.sampling_rate, cw.packet_length_ms, cw.padding_duration_ms, vad, frames, base_uuid, tcpt_queue_uuid)
 
 class VadWolf:
 
@@ -91,6 +33,53 @@ class VadWolf:
                 timestamp += duration
             except:
                 pass
+
+    @classmethod
+    def vad_collector(self, sample_rate, frame_duration_ms, padding_duration_ms, vad, frames, base_uuid, tcpt_queue_uuid):
+
+        num_padding_frames = int(padding_duration_ms / frame_duration_ms)
+        ring_buffer = collections.deque(maxlen=num_padding_frames)
+        triggered = False
+        decoder = pd()
+        seg_decoder = None
+        segment_uuid = None
+        segment_no = 0
+        segment_queue = PySimpleQueue()
+
+        for frame in frames:
+            is_speech = vad.is_speech(frame.bytes, sample_rate)
+            if not triggered:
+                ring_buffer.append((frame, is_speech))
+                num_voiced = len([f for f, speech in ring_buffer if speech])
+                if num_voiced > 0.9 * ring_buffer.maxlen:
+                    triggered = True
+                    segment_uuid = "%s-%i" % (base_uuid, segment_no)
+                    seg_decoder = decoder.create_segment_decoder_obj(segment_uuid, tcpt_queue_uuid, segment_no)
+                    segment_no += 1
+                    for f, s in ring_buffer:
+                        #pd.send_aud_to_seg_decoder(seg_decoder, f.bytes)
+                        segment_queue.put(segment_uuid, f.bytes)
+                        seg_decoder.get_aud_data()
+                    ring_buffer.clear()
+            else:
+                #pd.send_aud_to_seg_decoder(seg_decoder, frame.bytes)
+                segment_queue.put(segment_uuid, frame.bytes)
+                seg_decoder.get_aud_data()
+                ring_buffer.append((frame, is_speech))
+                num_unvoiced = len([f for f, speech in ring_buffer if not speech])
+                if num_unvoiced > 0.9 * ring_buffer.maxlen:
+                    triggered = False
+                    seg_decoder.get_pt()
+                    #yield seg_decoder
+                    ring_buffer.clear()
+                    print("-------------------segment done---------------------")
+
+        if not triggered:
+            seg_decoder.get_pt()
+            #yield seg_decoder
+
+
+#reserve code
 
     # @classmethod
     # def vad_collector(self, sample_rate, frame_duration_ms, padding_duration_ms, vad, frames):
@@ -172,46 +161,25 @@ class VadWolf:
     #     if voiced_frames:
     #         yield b''.join([f.bytes for f in voiced_frames])
 
-    @classmethod
-    def vad_collector(self, sample_rate, frame_duration_ms, padding_duration_ms, vad, frames):
+# def vadetectwork(aud_queue_uuid, tcpt_queue_uuid):
+#
+#     global kh
+#     # generate frames here
+#     vad = webrtcvad.Vad(cw.vad_agressiveness)
+#     frames = VadWolf.frame_generator(aud_queue_uuid)
+#     segments = VadWolf.vad_collector(cw.sampling_rate, cw.packet_length_ms, cw.padding_duration_ms, vad, frames)
+#     for i, segment in enumerate(segments):
+#         path = '%stmp/chunk-%s-%002d.wav' % (kh, tcpt_queue_uuid, i)
+#         print(' Writing %s' % (path,))
+#         VadWolf.write_wave(path, segment, cw.sampling_rate)
+#         #decode a file here - take care of sequence of chunk, use an env variable for kaldi
+#         # spawn a proc for STT and feed text into transcript queue.......
+#         opth = Process(name="ServerWolf_op_queue_feed_proc", target=gen_pt_send, args=(tcpt_queue_uuid, i, path))
+#         opth.start()
+#         print("New process spawned for pt generation")
 
-        num_padding_frames = int(padding_duration_ms / frame_duration_ms)
-        ring_buffer = collections.deque(maxlen=num_padding_frames)
-        triggered = False
-        decoder = pd()
-        seg_decoder = None
 
-        for frame in frames:
-            is_speech = vad.is_speech(frame.bytes, sample_rate)
-            if not triggered:
-                ring_buffer.append((frame, is_speech))
-                num_voiced = len([f for f, speech in ring_buffer if speech])
-                if num_voiced > 0.9 * ring_buffer.maxlen:
-                    triggered = True
-                    seg_decoder = decoder.create_segment_decoder_obj()
-                    for f, s in ring_buffer:
-                        pd.send_aud_to_seg_decoder(seg_decoder, f.bytes)
-                    ring_buffer.clear()
-            else:
-                pd.send_aud_to_seg_decoder(seg_decoder, frame.bytes)
-                ring_buffer.append((frame, is_speech))
-                num_unvoiced = len([f for f, speech in ring_buffer if not speech])
-                if num_unvoiced > 0.9 * ring_buffer.maxlen:
-                    triggered = False
-                    yield seg_decoder
-                    ring_buffer.clear()
-                    print("-------------------segment done---------------------")
-
-        if not triggered:
-            yield seg_decoder
-
-    @classmethod
-    def write_wave(self, path, audio, sample_rate):
-        """Writes a .wav file.
-        Takes path, PCM audio data, and sample rate.
-        """
-        with contextlib.closing(wave.open(path, 'wb')) as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(sample_rate)
-            wf.writeframes(audio)
+# tcpt_Queue_Vad = PySimpleQueue()
+    # for i, segment in enumerate(segments):
+    #     ts = TranscriptSegment(pd.get_segment_pt(segment), i)
+    #     ts.jsonifyAndSendToQueue(tcpt_queue_uuid, tcpt_Queue_Vad)#TODO test this......monday end

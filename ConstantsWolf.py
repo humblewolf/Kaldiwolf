@@ -37,6 +37,11 @@ class ConstantsWolf:
      0 is the least aggressive about filtering out non-speech, 3 is the most aggressive"""
     padding_duration_ms = 300
 
+    # decoding settings
+
+    chunk_file_save_loc = "/tmp/"
+    kaldi_home = "/home/humblewolf/kaldi-asr/"
+
     #  read from microphone, configs
 
     sampling_format = pyaudio.paInt16

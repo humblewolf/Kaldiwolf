@@ -6,7 +6,6 @@ Description: This implements the websocket server
 import argparse
 import logging
 import threading
-import uuid
 from gevent import monkey; monkey.patch_all()
 from ws4py.server.geventserver import WebSocketWSGIApplication, WebSocketWSGIHandler, WSGIServer
 from ws4py.websocket import EchoWebSocket
@@ -19,8 +18,6 @@ logging.basicConfig(filename=cw.srv_log_loc, level=logging.DEBUG, format= '%(asc
 
 
 class BroadcastWebSocket(EchoWebSocket):
-
-    base_key_store = []
 
     def check_tcptqueue(self):
         while True:
@@ -35,24 +32,16 @@ class BroadcastWebSocket(EchoWebSocket):
         with self.lock:
             self.send(msg)#this can be problematic
 
-    def get_uuid(self):
-        return str(uuid.uuid4())
-
     def opened(self):
-        base_key = self.get_uuid()
-        while base_key in BroadcastWebSocket.base_key_store:#this will mantain uniqueness of base key
-            base_key = self.get_uuid()
-
+        base_key = PySimpleQueue.get_true_base_uuid()
         self.aud_queue_uuid = base_key+"_in"
         self.tcpt_queue_uuid = base_key+"_out"
-
         self.audQueue = PySimpleQueue()
         self.tcptQueue = PySimpleQueue()
-
         self.lock = threading.RLock()
 
         # spawn a process to do vad and pass data to the queue.....
-        self.p = Process(name="ServerWolf_vad_proc", target=VW.vadetectwork, args=(self.aud_queue_uuid, self.tcpt_queue_uuid))
+        self.p = Process(name="ServerWolf_vad_proc", target=VW.vadetectwork, args=(self.aud_queue_uuid, self.tcpt_queue_uuid, base_key))
         self.p.start()
         print("New process spawned for vad")
 
