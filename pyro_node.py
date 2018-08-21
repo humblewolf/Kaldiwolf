@@ -5,14 +5,26 @@ Description: this file will work as a remote kaldi decoder, pyro is being used f
 import Pyro4
 import sys
 from ConstantsWolf import ConstantsWolf as cw
+import serpent
 
 
 @Pyro4.behavior(instance_mode="single")
 class KaldiDecoder():
+
+    def __init__(self):
+        self.aud_binary_data = b''
+
     @Pyro4.expose
-    def decode_by_kaldi(self, msg):
-        print('Message is %s' % (msg,))
-        return 'Message is %s' % (msg,)
+    def get_aud_data(self, msg):
+        msg = serpent.tobytes(msg)
+        print('Aud data received is %s' % (msg,))
+        self.aud_binary_data += msg
+        return True
+        #init a new kaldi process using subprocess.popen
+
+    @Pyro4.expose
+    def get_pt(self):
+        return str(self.aud_binary_data)
         #init a new kaldi process using subprocess.popen
 
 
