@@ -17,6 +17,7 @@ from gevent import monkey; monkey.patch_all()
 from ws4py.client.geventclient import WebSocketClient
 from ConstantsWolf import ConstantsWolf as cw
 from time import sleep
+import time
 
 logging.basicConfig(filename=cw.client_log_loc, level=logging.DEBUG, format= '%(asctime)s %(levelname)s %(message)s')
 
@@ -65,6 +66,7 @@ if __name__ == '__main__':
     ws = WebSocketClient('ws://%s:%i/ws' % (cw.ws_server_host,cw.ws_server_port), protocols=['http-only', 'chat'])
     ws.connect()
     logging.info("Client connected to server.")
+    print('------Started at %s--------' % (time.time()))
 
     def incoming():
         i = 0
@@ -76,7 +78,7 @@ if __name__ == '__main__':
                 op_buffer[ts['pos']] = ts['pt']
                 while True:
                     try:
-                        print(op_buffer[i])
+                        print('%s => %s' % (time.time(), op_buffer[i]))
                         i += 1
                     except:
                         break
