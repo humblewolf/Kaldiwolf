@@ -33,12 +33,13 @@ class TranscriptSegment:
             wf.writeframes(audio)
 
 
-def invoke_now(self, tcpt_queue_uuid, sequence_no, path):
+def invoke_now(tcpt_queue_uuid, sequence_no, path):
     executable = 'cd %s && ./decode_single.sh ' % (cw.kaldi_home,)
     args = '%s' % (path,)
     p = subprocess.Popen(executable + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     stdo, stde = p.communicate()
     match = re.match(r'.*<s>(.*)<\/s>.*', str(stde))
+    #print(str(stde))
     if match:
         ts = TranscriptSegment(match.group(1), sequence_no)
         ts.jsonifyAndSendToQueue(tcpt_queue_uuid, psq())
