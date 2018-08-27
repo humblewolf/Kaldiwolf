@@ -4,6 +4,8 @@ Description: this file will work as a remote kaldi decoder, pyro is being used f
 """
 import Pyro4
 import sys
+import os
+import threading
 from ConstantsWolf import ConstantsWolf as cw
 from kaldi_invoker import TranscriptSegment, invoke_now
 from RedisQueueWolf import PySimpleQueue as psq
@@ -17,24 +19,34 @@ class KaldiDecoder():
         self.psq = psq()
 
     @Pyro4.expose
+    @Pyro4.oneway
     def get_aud_data(self):
-        print("Triggering audio data retrieval")
-        self.aud_binary_data += self.psq.get_nowait(self.segment_uuid)
+        msg = self.psq.get(self.segment_uuid)
+        self.aud_binary_data += msg
 
     @Pyro4.expose
+    @Pyro4.oneway
     def set_uuids(self, segment_uuid, tcpt_queue_uuid, segment_no):
+        print("Setting segment uuids")
         self.segment_uuid = segment_uuid
         self.tcpt_queue_uuid = tcpt_queue_uuid
         self.segment_no = segment_no
 
     @Pyro4.expose
+    @Pyro4.oneway
     def get_pt(self):
-        path = '%skaldi_wolf/chunk-%s.wav' % (cw.chunk_file_save_loc, self.segment_uuid)
-        print(' Writing file %s' % (path,))
+        segment_audio_path = '%stmp/' % (cw.kaldi_home,)
+        self.check_and_create_dir(segment_audio_path)
+        path = '%schunk-%s.wav' % (segment_audio_path, self.segment_uuid)
+        print(' Writing file %s of size %i' % (path,len(self.aud_binary_data)))
         TranscriptSegment.write_wave(path, self.aud_binary_data, cw.sampling_rate)
         opth = Process(name="ServerWolf_op_queue_feed_proc", target=invoke_now, args=(self.tcpt_queue_uuid, self.segment_no, path))
         opth.start()
         print("New process spawned for pt generation")
+
+    def check_and_create_dir(self, path):
+        if not os.path.exists(path):
+            os.makedirs(path)
 
 
 def get_available_pyroname(ns):

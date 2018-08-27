@@ -38,9 +38,7 @@ class ConstantsWolf:
     padding_duration_ms = 300
 
     # decoding settings
-
-    chunk_file_save_loc = "/tmp/"
-    kaldi_home = "/home/humblewolf/kaldi-asr/"
+    kaldi_home = "/home/humblewolf/kaldi-asr/"  # this path should have trailing slashes
 
     #  read from microphone, configs
 
