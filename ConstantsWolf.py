@@ -19,7 +19,7 @@ class ConstantsWolf:
     bytes_per_sample = 2
     channels = 1
     test_file_wav = "D:\\anagram\\asterisk-intg\\ivrag\\31512.wav"
-    loop_sleep_secs = 0.02
+    loop_sleep_secs = 0.001 # 0.001 gives best for 2 good nodes
 
     # server configs
 
@@ -32,7 +32,7 @@ class ConstantsWolf:
 
     #  vad settings
 
-    vad_agressiveness = 2  # 2 seems to be a good agressiveness
+    vad_agressiveness = 2  # 2 for file decoding, 3 for mic decoding
     """set its aggressiveness mode, which is an integer between 0 and 3.
      0 is the least aggressive about filtering out non-speech, 3 is the most aggressive"""
     padding_duration_ms = 300
@@ -51,4 +51,4 @@ class ConstantsWolf:
     bytes_per_sample_mic = 2
     channels_mic = 1
     test_record_seconds = 10
-    loop_sleep_secs_mic = 0.02
+    loop_sleep_secs_mic = 0.002

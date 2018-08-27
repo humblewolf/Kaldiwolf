@@ -66,19 +66,23 @@ if __name__ == '__main__':
     ws = WebSocketClient('ws://%s:%i/ws' % (cw.ws_server_host,cw.ws_server_port), protocols=['http-only', 'chat'])
     ws.connect()
     logging.info("Client connected to server.")
-    print('------Started at %s--------' % (time.time()))
+    print('------Client Started at %s--------' % (time.time()))
 
     def incoming():
         i = 0
         op_buffer = {}
         while True:
             m = ws.receive(block=True)
-            if m is not None:
-                ts = json.loads(str(m))
+            msg = str(m)
+            if msg.startswith("*"):
+                print(msg)
+            elif msg is not None:
+                ts = json.loads(msg)
                 op_buffer[ts['pos']] = ts['pt']
+                print('segment %i pt received at %s' % (ts['pos'], time.time()))
                 while True:
                     try:
-                        print('%s => %s' % (time.time(), op_buffer[i]))
+                        print('%i =============> %s => %s' % (i, time.time(), op_buffer[i]))
                         i += 1
                     except:
                         break
@@ -95,7 +99,7 @@ if __name__ == '__main__':
         raw_aud = read_wave(cw.test_file_wav)
         for packet in packet_generator(cw.packet_length_ms, raw_aud, cw.sampling_rate):
             if isinstance(packet, bytes):
-                sleep(cw.loop_sleep_secs) # 0.02 seconds seems to be a nice wait time
+                sleep(cw.loop_sleep_secs)
                 ws.send(packet, binary=True)
 
     def outgoing_mic():
@@ -121,11 +125,8 @@ if __name__ == '__main__':
         #while True:
         for i in range(0, 1000):
             packet = stream.read(packet_size)
-            #print(packet)
-            #print(len(packet))
-            #frames.append(packet)
             ws.send(packet, binary=True)
-            sleep(cw.loop_sleep_secs_mic) # 0.02 seconds seems to be a nice wait time
+            sleep(cw.loop_sleep_secs_mic)
 
         print("* done recording")
 
@@ -148,5 +149,5 @@ if __name__ == '__main__':
         print("Only file or mic mode is supported")
         sys.exit(0)
 
-    #print(args.mode)
+    print('------Client ready at %s--------' % (time.time()))
     gevent.joinall(greenlets)

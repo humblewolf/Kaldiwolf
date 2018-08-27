@@ -9,6 +9,7 @@ from ConstantsWolf import ConstantsWolf as cw
 from decoder_wolf import PyroDecoder as pd
 import collections
 import webrtcvad
+import time
 
 
 def vadetectwork(aud_queue_uuid, tcpt_queue_uuid, base_uuid):
@@ -44,7 +45,7 @@ class VadWolf:
         seg_decoder = None
         segment_uuid = None
         segment_no = 0
-        segment_queue = PySimpleQueue()
+        queue = PySimpleQueue()
 
         for frame in frames:
             is_speech = vad.is_speech(frame.bytes, sample_rate)
@@ -58,18 +59,19 @@ class VadWolf:
                     segment_no += 1
                     for f, s in ring_buffer:
                         #pd.send_aud_to_seg_decoder(seg_decoder, f.bytes)
-                        segment_queue.put(segment_uuid, f.bytes)
+                        queue.put(segment_uuid, f.bytes)
                         seg_decoder.get_aud_data()
                     ring_buffer.clear()
             else:
                 #pd.send_aud_to_seg_decoder(seg_decoder, frame.bytes)
-                segment_queue.put(segment_uuid, frame.bytes)
+                queue.put(segment_uuid, frame.bytes)
                 seg_decoder.get_aud_data()
                 ring_buffer.append((frame, is_speech))
                 num_unvoiced = len([f for f, speech in ring_buffer if not speech])
                 if num_unvoiced > 0.9 * ring_buffer.maxlen:
                     triggered = False
                     seg_decoder.get_pt()
+                    queue.put(tcpt_queue_uuid, '*------Segment %i created and triggered for decoding at %s--------' % (segment_no-1, time.time()))
                     #yield seg_decoder
                     ring_buffer.clear()
                     print("-------------------segment done---------------------")
