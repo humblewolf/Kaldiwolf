@@ -4,7 +4,6 @@ Description: This file reads data from a file/audio device and send it to websoc
 Audio should be sampled at 8khz, fixed
 """
 
-
 import gevent
 import contextlib
 import wave
@@ -41,7 +40,7 @@ def packet_generator(packet_length_ms, audio, sample_rate):
     the sample rate.
     Yields Frames of the requested duration.
     """
-    n = int(sample_rate * (packet_length_ms / 1000.0) * cw.bytes_per_sample)#grab 30x8 = 240 samples per packet or 240x2=480 bits per packet
+    n = int(sample_rate * (packet_length_ms / 1000.0) * cw.bytes_per_sample)#grab 30x8 = 240 samples per packet or 240x2=480 bytes per packet
     offset = 0
     while offset + n < len(audio):
         yield audio[offset:offset + n]
@@ -67,6 +66,10 @@ if __name__ == '__main__':
     ws.connect()
     logging.info("Client connected to server.")
     print('------Client Started at %s--------' % (time.time()))
+
+    def close_connection():
+        ws.close(reason="user_terminated_action")
+        ws.close_connection()
 
     def incoming():
         i = 0
@@ -102,6 +105,10 @@ if __name__ == '__main__':
                 sleep(cw.loop_sleep_secs)
                 ws.send(packet, binary=True)
 
+        print("* sending termination signal")
+        ws.send("s", binary=False)
+
+
     def outgoing_mic():
         """
         Send frames fron audio mic here, use generators here, try to use some throttling here
@@ -128,11 +135,11 @@ if __name__ == '__main__':
             ws.send(packet, binary=True)
             sleep(cw.loop_sleep_secs_mic)
 
-        print("* done recording")
+        print("* done recording, sending termination signal")
+        ws.send("s", binary=False)
 
         stream.stop_stream()
         stream.close()
-        #writeToWavFileFromMic(p, frames)
         p.terminate()
 
     if args.mode == "file":

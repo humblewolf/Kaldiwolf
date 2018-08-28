@@ -21,6 +21,9 @@ class PySimpleQueue(object):
         """Return True if the queue is empty, False otherwise."""
         return self.qsize(key) == 0
 
+    def remove(self, key):
+        self.__db.delete(key)
+
     def put(self, key, item):
         """Put item into the queue."""
         self.__db.rpush(key, item)

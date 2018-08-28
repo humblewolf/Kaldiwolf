@@ -46,13 +46,22 @@ class VadWolf:
         segment_uuid = None
         segment_no = 0
         queue = PySimpleQueue()
+        is_end_signal_received = False
+        standard_packet_length = int(cw.sample_rate * (cw.packet_length_ms / 1000.0))  # 480 for 30 ms packet sampled at 8k
 
         for frame in frames:
-            is_speech = vad.is_speech(frame.bytes, sample_rate)
+
+            if len(frame.bytes) == standard_packet_length:
+                is_speech = vad.is_speech(frame.bytes, sample_rate)
+            else:
+                is_speech = False
+                is_end_signal_received = True
+                print("-------------------End signal received, sending it to node---------------------")
+
             if not triggered:
                 ring_buffer.append((frame, is_speech))
                 num_voiced = len([f for f, speech in ring_buffer if speech])
-                if num_voiced > 0.9 * ring_buffer.maxlen:
+                if (num_voiced > 0.9 * ring_buffer.maxlen) or is_end_signal_received:
                     triggered = True
                     segment_uuid = "%s-%i" % (base_uuid, segment_no)
                     seg_decoder = decoder.create_segment_decoder_obj(segment_uuid, tcpt_queue_uuid, segment_no)
@@ -70,15 +79,11 @@ class VadWolf:
                 num_unvoiced = len([f for f, speech in ring_buffer if not speech])
                 if num_unvoiced > 0.9 * ring_buffer.maxlen:
                     triggered = False
-                    seg_decoder.get_pt()
+                    seg_decoder.get_pt(is_end_signal_received)
                     queue.put(tcpt_queue_uuid, '*------Segment %i created and triggered for decoding at %s--------' % (segment_no-1, time.time()))
                     #yield seg_decoder
                     ring_buffer.clear()
-                    print("-------------------segment done---------------------")
-
-        if not triggered:
-            seg_decoder.get_pt()
-            #yield seg_decoder
+                    print("-------------------segment done, checking for end signal---------------------")
 
 
 #reserve code

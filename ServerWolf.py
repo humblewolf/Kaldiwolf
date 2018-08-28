@@ -6,6 +6,7 @@ Description: This implements the websocket server
 import argparse
 import logging
 import threading
+from time import sleep
 from gevent import monkey; monkey.patch_all()
 from ws4py.server.geventserver import WebSocketWSGIApplication, WebSocketWSGIHandler, WSGIServer
 from ws4py.websocket import EchoWebSocket
@@ -52,8 +53,14 @@ class BroadcastWebSocket(EchoWebSocket):
 
 
     def received_message(self, m):
-        self.audQueue.put(self.aud_queue_uuid, m.data)
-        #print("msg recv and placed on queue")
+        if m.is_binary:
+            self.audQueue.put(self.aud_queue_uuid, m.data)
+        else:
+            self.audQueue.put(self.aud_queue_uuid, m.data)  # put special packet as it is
+            silence_packet = b'\x00\x00' * int(cw.sample_rate * (cw.packet_length_ms / 1000.0))
+            while True:
+                self.audQueue.put(self.aud_queue_uuid, silence_packet)  # start adding silence to make sure any residual data gets sent to pyronode
+                sleep(0.01)  # 10 ms sleep
 
 
 class EchoWebSocketApplication(object):
