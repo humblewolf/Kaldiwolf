@@ -47,7 +47,7 @@ class VadWolf:
         segment_no = 0
         queue = PySimpleQueue()
         is_end_signal_received = False
-        standard_packet_length = int(cw.sample_rate * (cw.packet_length_ms / 1000.0))  # 480 for 30 ms packet sampled at 8k
+        standard_packet_length = int(cw.sampling_rate * (cw.packet_length_ms / 1000.0) * cw.bytes_per_sample)  # 480 for 30 ms packet sampled at 8k
 
         for frame in frames:
 
@@ -56,7 +56,7 @@ class VadWolf:
             else:
                 is_speech = False
                 is_end_signal_received = True
-                print("-------------------End signal received, sending it to node---------------------")
+                print("-------------------End signal received, sending it to node------%i----%i-----------" % (len(frame.bytes),standard_packet_length))
 
             if not triggered:
                 ring_buffer.append((frame, is_speech))
@@ -83,6 +83,7 @@ class VadWolf:
                     queue.put(tcpt_queue_uuid, '*------Segment %i created and triggered for decoding at %s--------' % (segment_no-1, time.time()))
                     #yield seg_decoder
                     ring_buffer.clear()
+                    is_end_signal_received = False
                     print("-------------------segment done, checking for end signal---------------------")
 
 

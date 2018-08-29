@@ -42,6 +42,7 @@ class KaldiDecoder():
         TranscriptSegment.write_wave(path, self.aud_binary_data, cw.sampling_rate)
         opth = Process(name="ServerWolf_op_queue_feed_proc", target=invoke_now, args=(self.tcpt_queue_uuid, self.segment_no, path, is_last_segment))
         opth.start()
+        self.psq.remove((self.segment_uuid,))  # remove garbage psq queue
         print("New process spawned for pt generation")
 
     def check_and_create_dir(self, path):

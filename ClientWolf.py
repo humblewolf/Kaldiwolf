@@ -74,7 +74,8 @@ if __name__ == '__main__':
     def incoming():
         i = 0
         op_buffer = {}
-        while True:
+        end_not_received = True
+        while end_not_received:
             m = ws.receive(block=True)
             msg = str(m)
             if msg.startswith("*"):
@@ -83,15 +84,19 @@ if __name__ == '__main__':
                 ts = json.loads(msg)
                 op_buffer[ts['pos']] = ts['pt']
                 print('segment %i pt received at %s' % (ts['pos'], time.time()))
-                while True:
+                while end_not_received:
                     try:
-                        print('%i =============> %s => %s' % (i, time.time(), op_buffer[i]))
+                        pt = op_buffer[i]
+                        if pt == "###END###":
+                            end_not_received = False
+                        print('%i =============> %s => %s' % (i, time.time(), pt))
                         i += 1
                     except:
                         break
             else:
                 break
 
+        close_connection()
         logging.info("Client disconnected from server.")
 
     def outgoing_file():

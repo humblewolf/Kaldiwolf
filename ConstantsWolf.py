@@ -29,6 +29,7 @@ class ConstantsWolf:
     redis_server_port = 6379  # not used , if you want to change it change redispy initalization in Redisqueuewolf
     client_log_loc = "logs/client.log"
     srv_log_loc = "logs/server.log"
+    srv_tcpt_queue_block_timeout = 3
 
     #  vad settings
 
@@ -39,6 +40,7 @@ class ConstantsWolf:
 
     # decoding settings
     kaldi_home = "/home/humblewolf/kaldi-asr/"  # this path should have trailing slashes
+    decode_script_name = "decode_kw.sh"
 
     #  read from microphone, configs
 
