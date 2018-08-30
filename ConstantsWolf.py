@@ -11,7 +11,7 @@ class ConstantsWolf:
 
     pyro_node_name_prefix = "kaldiwolf_pyro_node"
     max_pyro_nodes = 100
-    pyro_ns_address = "52.168.84.235"  # this must be on an all-visible node
+    pyro_ns_address = "10.131.10.64"  # this must be on an all-visible node
 
     #  read from wav file settings
 

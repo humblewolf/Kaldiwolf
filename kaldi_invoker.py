@@ -34,7 +34,7 @@ class TranscriptSegment:
 
 
 def invoke_now(tcpt_queue_uuid, sequence_no, path, is_last_segment):
-    executable = 'cd %s && ./%s' % (cw.kaldi_home, cw.decode_script_name)
+    executable = 'cd %s && ./%s ' % (cw.kaldi_home, cw.decode_script_name)  # notice the space in the end
     args = '%s' % (path,)
     p = subprocess.Popen(executable + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     stdo, stde = p.communicate()
