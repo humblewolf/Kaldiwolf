@@ -16,4 +16,11 @@ Source Code pro, 0.7, 11
 
 > Start name server bound to 0.0.0.0 on any machine of network
 
+apt install pyro4
 pyro4-ns -n 0.0.0.0
+
+> In case pyaudio is not getting installed via pip, installing following packages would most probably resolve the issue
+
+apt update
+apt install python3-dev
+apt install portaudio19-dev

@@ -10,3 +10,5 @@ To do's:
 
 > Pyro cns does not entertain old nodes once restarted.
 > Misc tuning
+
+3. Send executing decode script and kaldi-home path from server to nodes.

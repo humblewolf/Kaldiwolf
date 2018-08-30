@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     print("Checking a pyro name-server on network, please allow udp in all firewalls")
     try:
-        ns = Pyro4.locateNS()
+        ns = Pyro4.locateNS(host=cw.pyro_ns_address)
     except Exception as ex:
         print("Please start a pyro name server, visit README.md for details of starting a pyro nameserver.")
         sys.exit(0)
