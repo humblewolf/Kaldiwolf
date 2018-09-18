@@ -40,7 +40,7 @@ class ConstantsWolf:
 
     ######################## client only settings ###############################
 
-    ws_server_host = "127.0.0.1"
+    ws_server_host = "10.131.10.64"
     ws_server_port = 9000
     client_log_loc = "logs/client.log"
 
