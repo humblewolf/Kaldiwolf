@@ -40,6 +40,7 @@ class VadWolf:
 
         num_padding_frames = int(padding_duration_ms / frame_duration_ms)
         ring_buffer = collections.deque(maxlen=num_padding_frames)
+        extended_ring_buffer = collections.deque(maxlen=num_padding_frames+10) # this has 10 more frames than ring buffer
         triggered = False
         decoder = pd()
         seg_decoder = None
@@ -60,17 +61,19 @@ class VadWolf:
 
             if not triggered:
                 ring_buffer.append((frame, is_speech))
+                extended_ring_buffer.append(frame)
                 num_voiced = len([f for f, speech in ring_buffer if speech])
                 if (num_voiced > 0.9 * ring_buffer.maxlen) or is_end_signal_received:
                     triggered = True
                     segment_uuid = "%s-%i" % (base_uuid, segment_no)
                     seg_decoder = decoder.create_segment_decoder_obj(segment_uuid, tcpt_queue_uuid, segment_no)
                     segment_no += 1
-                    for f, s in ring_buffer:
+                    for f in extended_ring_buffer:
                         #pd.send_aud_to_seg_decoder(seg_decoder, f.bytes)
                         queue.put(segment_uuid, f.bytes)
                         seg_decoder.get_aud_data()
                     ring_buffer.clear()
+                    extended_ring_buffer.clear()
             else:
                 #pd.send_aud_to_seg_decoder(seg_decoder, frame.bytes)
                 queue.put(segment_uuid, frame.bytes)
@@ -85,7 +88,6 @@ class VadWolf:
                     ring_buffer.clear()
                     is_end_signal_received = False
                     print("-------------------segment done, checking for end signal---------------------")
-
 
 #reserve code
 

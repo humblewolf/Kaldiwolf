@@ -40,7 +40,8 @@ class ConstantsWolf:
 
     ######################## client only settings ###############################
 
-    ws_server_host = "10.131.10.64"
+    #ws_server_host = "10.131.10.64"
+    ws_server_host = "127.0.0.1"
     ws_server_port = 9000
     client_log_loc = "logs/client.log"
 
@@ -61,5 +62,5 @@ class ConstantsWolf:
     packet_length_ms = 30
     bytes_per_sample = 2
     channels = 1
-    test_file_wav = "D:\\anagram\\asterisk-intg\\ivrag\\31512.wav"
+    test_file_wav = "D:\\shared_folder_2\\toall\\3.wav"
     loop_sleep_secs = 0.001  # 0.001 gives best for 2 good nodes
