@@ -17,6 +17,7 @@ class KaldiDecoder():
     def __init__(self):
         self.aud_binary_data = b''
         self.psq = psq()
+        self.lm = None
 
     @Pyro4.expose
     @Pyro4.oneway
@@ -34,13 +35,19 @@ class KaldiDecoder():
 
     @Pyro4.expose
     @Pyro4.oneway
+    def set_lm(self, lm):
+        print("Setting lm for decoding")
+        self.lm = lm
+
+    @Pyro4.expose
+    @Pyro4.oneway
     def get_pt(self, is_last_segment):
         segment_audio_path = '%stmp/' % (cw.kaldi_home,)
         self.check_and_create_dir(segment_audio_path)
         path = '%schunk-%s.wav' % (segment_audio_path, self.segment_uuid)
         print(' Writing file %s of size %i' % (path,len(self.aud_binary_data)))
         TranscriptSegment.write_wave(path, self.aud_binary_data, cw.sampling_rate)
-        opth = Process(name="ServerWolf_op_queue_feed_proc", target=invoke_now, args=(self.tcpt_queue_uuid, self.segment_no, path, is_last_segment))
+        opth = Process(name="ServerWolf_op_queue_feed_proc", target=invoke_now, args=(self.lm, self.tcpt_queue_uuid, self.segment_no, path, is_last_segment))
         opth.start()
         self.psq.remove((self.segment_uuid,))  # remove garbage psq queue
         print("New process spawned for pt generation")

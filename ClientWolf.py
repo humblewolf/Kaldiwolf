@@ -58,8 +58,10 @@ def writeToWavFileFromMic(p, frames):
 
 if __name__ == '__main__':
 
-    ap = argparse.ArgumentParser(usage="python ClientWolf.py --mode file/mic")
+    ap = argparse.ArgumentParser(usage="python ClientWolf.py --mode file/mic --lm name_of_lm --file [file to use for decoding]")
     ap.add_argument('-m', '--mode', default="file", required=True, help='From where to take input data ? Can be file/mic')
+    ap.add_argument('-l', '--lm', default=None, required=True, help='which lm you are going to use for decoding')
+    ap.add_argument('-f', '--file', default=None, required=False, help='Which file to use for decoding, must be an audio file.')
     args = ap.parse_args()
 
     ws = WebSocketClient('ws://%s:%i/ws' % (cw.ws_server_host,cw.ws_server_port), protocols=['http-only', 'chat'])
@@ -104,7 +106,9 @@ if __name__ == '__main__':
         Send frames fron audio file here, use generators here, try to use some throttling here
         """
 
-        raw_aud = read_wave(cw.test_file_wav)
+        raw_aud = read_wave(args.file)
+        #first send some info about lm
+        ws.send(args.lm)
         for packet in packet_generator(cw.packet_length_ms, raw_aud, cw.sampling_rate):
             if isinstance(packet, bytes):
                 sleep(cw.loop_sleep_secs)
