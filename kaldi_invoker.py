@@ -36,7 +36,7 @@ class TranscriptSegment:
 def invoke_now(lm, tcpt_queue_uuid, sequence_no, path, is_last_segment):
 
     if lm is not None:
-        executable = 'cd %s && ./%s ' % (cw.kaldi_home, lm)  # notice the space in the end
+        executable = 'cd %s && .%s.sh ' % (cw.kaldi_home, lm)  # notice the space in the end
         args = '%s' % (path,)
         p = subprocess.Popen(executable + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         stdo, stde = p.communicate()

@@ -13,12 +13,12 @@ class ConstantsWolf:
 
     pyro_node_name_prefix = "kaldiwolf_pyro_node"
     max_pyro_nodes = 100
-    pyro_ns_address = "10.131.10.64"  # this must be on an all-visible node <<<<<<<<<<<<<<<<-------------------
+    pyro_ns_address = "10.201.253.102"  # this must be on an all-visible node <<<<<<<<<<<<<<<<-------------------
 
 
     # server configs
 
-    redis_server_host = "10.131.10.64"  # not used , if you want to change it change redispy initalization in Redisqueuewolf
+    redis_server_host = "10.201.253.102"  # not used , if you want to change it change redispy initalization in Redisqueuewolf
     redis_server_port = 6379  # not used , if you want to change it change redispy initalization in Redisqueuewolf
     srv_tcpt_queue_block_timeout = 3
 

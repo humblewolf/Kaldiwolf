@@ -49,7 +49,9 @@ class BroadcastWebSocket(EchoWebSocket):
         self.tcptQueue = PySimpleQueue()
         self.lock = threading.RLock()
         self.is_conn_closed = False
-        self.lm = None
+        self.lm = self.environ['lm']
+
+        print("LM used will be - %s" % (self.lm,))
 
         # spawn a process to do vad and pass data to the queue.....
         self.p = Process(name="ServerWolf_vad_proc", target=VW.vadetectwork, args=(self.lm, self.aud_queue_uuid, self.tcpt_queue_uuid, base_key))
@@ -73,17 +75,11 @@ class BroadcastWebSocket(EchoWebSocket):
     def received_message(self, m):
         if m.is_binary:
             self.audQueue.put(self.aud_queue_uuid, m.data)
-        elif m.is_text and str(m) == 's':
-            print("Stop flag received")
+        else:
             self.audQueue.put(self.aud_queue_uuid, m.data)  # put special packet as it is
             self.spt = threading.Thread(name="ServerWolf_silence_send_thr", target=self.send_silence_packets)
             self.spt.daemon = True
             self.spt.start()
-        elif m.is_text:
-            self.lm = str(m)
-            print("lm is %s" % self.lm)
-        else:
-            print("Unrecognised message received")
 
 
 class EchoWebSocketApplication(object):
@@ -93,12 +89,13 @@ class EchoWebSocketApplication(object):
         self.ws = WebSocketWSGIApplication(handler_cls=BroadcastWebSocket)
 
     def __call__(self, environ, start_response):
-
-        if environ['PATH_INFO'] == '/ws':
+        lm = environ['PATH_INFO']
+        if lm is not None and len(lm) > 0:
             environ['ws4py.app'] = self
+            environ['lm'] = lm
             return self.ws(environ, start_response)
-
-        return None
+        else:
+            return None
 
 
 if __name__ == '__main__':
